@@ -49,8 +49,6 @@ internal static class LegacyCopies
 
             // Spireverse, and copies of it, saved personal rolls beside their DLL.
             CardArtRoller.LoadRollsFrom(Path.Combine(mod.path, "ArtRoller"), UserRolls);
-
-            WarnIfPastedCopy(mod, id);
         }
     }
 
@@ -60,23 +58,4 @@ internal static class LegacyCopies
             list.Add(directory);
     }
 
-    private static void WarnIfPastedCopy(Mod mod, string id)
-    {
-        foreach (var assembly in mod.assemblies)
-        {
-            try
-            {
-                if (assembly.GetTypes().Any(t => t.Name == nameof(CardArtRoller)))
-                {
-                    Log.Warn($"[CardArtRoller] {id} contains its own copy of the Art Roller. Its rolls are read " +
-                             "automatically, but both copies patch card rendering; it should depend on ArtRoller instead.");
-                    return;
-                }
-            }
-            catch (Exception)
-            {
-                // A mod assembly with unresolvable types says nothing about copies; skip it.
-            }
-        }
-    }
 }
