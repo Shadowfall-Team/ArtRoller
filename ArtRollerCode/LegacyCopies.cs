@@ -1,12 +1,11 @@
 using Godot;
-using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 
 namespace ArtRoller;
 
 /// <summary>
 /// Finds rolls by convention, including those of mods that pasted in their own copy of Art Roller.
-/// Reading a copy's rolls keeps both copies computing the same colours; otherwise whichever
+/// Reading a copy's rolls keeps both copies computing the same colors; otherwise whichever
 /// NCard.Reload postfix runs last wins, and ours would reset that mod's cards to neutral.
 ///
 /// Repeats whenever the loaded-mod count changes, since a mod that does not depend on Art Roller

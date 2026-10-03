@@ -22,7 +22,7 @@ public static class CardLibraryContext
     /// The character whose pool is on screen, or null when the library is not open.
     ///
     /// Deliberately gated on the library still being alive and in the tree: without that, a filter
-    /// left selected would keep colouring canonical cards long after the screen was closed.
+    /// left selected would keep coloring canonical cards long after the screen was closed.
     /// </summary>
     public static CharacterModel? ViewedCharacter =>
         _library != null && GodotObject.IsInstanceValid(_library) && _library.IsInsideTree()

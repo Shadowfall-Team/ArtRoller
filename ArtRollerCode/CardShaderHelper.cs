@@ -10,7 +10,7 @@ public static class CardShaderHelper
 
     public static ShaderMaterial? CreateMaterial(CardHsvData? data)
     {
-        // Missing when ArtRoller.pck is: leave cards unrecoloured rather than throw inside NCard.Reload,
+        // Missing when ArtRoller.pck is: leave cards unrecolored rather than throw inside NCard.Reload,
         // which breaks the game's own card screens.
         if (GD.Load<Shader>(ShaderPath) is not { } source) return null;
 
@@ -77,8 +77,7 @@ public static class CardShaderHelper
             // An inactive set is sent as width 0, which the shader skips outright.
             if (!set.IsActive) continue;
             anyActive = true;
-
-            // Hues are in turns of the colour wheel. Shift maps 0..2 onto -half..+half a turn.
+            
             target[i]     = ParseColor(set.Color, Colors.Red).H;
             width[i]      = set.Width * 0.25f;
             shift[i]      = (set.Shift - 1f) * 0.5f;
@@ -87,7 +86,7 @@ public static class CardShaderHelper
             softness[i]   = Mathf.Clamp(set.Softness, 0f, 1f);
         }
 
-        // Skips the per-pixel colour conversion entirely on the many cards with no selective sets.
+        // Skips the per-pixel color conversion entirely on the many cards with no selective sets.
         mat.SetShaderParameter("selective_active",     anyActive);
         mat.SetShaderParameter("selective_target_hue", target);
         mat.SetShaderParameter("selective_width",      width);

@@ -2,7 +2,6 @@ using HarmonyLib;
 using Godot;
 using ArtRoller.Patches;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
-using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Saves;
@@ -10,6 +9,10 @@ using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.Multiplayer;
 
 namespace ArtRoller.Editor;
 
@@ -397,7 +400,7 @@ public class ArtRollerEditorPatch
         };
         // The eyedropper is how a selective target gets picked straight off the card's art.
         picker.GetPicker().SamplerVisible = true;
-        // Same thin frame BaseLib gives its config colour pickers, so the swatch reads as a control.
+        // Same thin frame BaseLib gives its config color pickers, so the swatch reads as a control.
         var frame = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0), BorderColor = new Color(0.3f, 0.3f, 0.3f) };
         frame.SetBorderWidthAll(2);
         frame.SetContentMarginAll(2);
@@ -653,7 +656,7 @@ public class ArtRollerEditorPatch
         CardArtRoller.SaveHsvForCard(cardId, _state);
         MarkClean();
         ReloadCards();
-        Log.Info($"[ArtRollerEditorPatch] Saved for card: {cardId}");
+        MainFile.Logger.Info($"Saved for card: {cardId}");
     }
 
     private static void OnClearButtonPressed()
@@ -664,7 +667,7 @@ public class ArtRollerEditorPatch
         CardArtRoller.DeleteHsvForCard(cardId);
         ReloadCards();
         LoadStateFromRoll();
-        Log.Info($"[ArtRollerEditorPatch] Cleared for card: {cardId}");
+        MainFile.Logger.Info($"Cleared for card: {cardId}");
     }
 
     /// <summary>Copies the look, not the art: the portrait stays with the card it was chosen for.</summary>
@@ -693,8 +696,9 @@ public class ArtRollerEditorPatch
 
         string cardId = ArtContext.KeyFor(_currentCard);
         CardArtRoller.SaveDefaultHsvForCard(cardId, _state);
+        MarkClean();
         ReloadCards();
-        Log.Info($"[ArtRollerEditorPatch] Saved default for card: {cardId}");
+        MainFile.Logger.Info($"Saved default for card: {cardId}");
     }
 
     private static void OnClearDefaultButtonPressed()
@@ -702,13 +706,33 @@ public class ArtRollerEditorPatch
         if (_currentCard == null) return;
 
         string cardId = ArtContext.KeyFor(_currentCard);
+        if (CardArtRoller.GetDefaultHsvForCard(cardId) == null)
+        {
+            TaskHelper.RunSafely(ShowNotice("ARTROLLER-EDITOR_NO_DEFAULT"));
+            return;
+        }
+
         CardArtRoller.DeleteDefaultHsvForCard(cardId);
         ReloadCards();
         LoadStateFromRoll();
-        Log.Info($"[ArtRollerEditorPatch] Cleared default for card: {cardId}");
+        MainFile.Logger.Info($"Cleared default for card: {cardId}");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>A one-button popup, for a press that would otherwise change nothing on screen.</summary>
+    private static async Task ShowNotice(string locKey)
+    {
+        var popup = NGenericPopup.Create();
+        if (popup == null || NModalContainer.Instance == null) return;
+
+        NModalContainer.Instance.Add(popup);
+        await popup.WaitForConfirmation(
+            body: new LocString("settings_ui", $"{locKey}.body"),
+            header: new LocString("settings_ui", $"{locKey}.header"),
+            noButton: null,
+            yesButton: new LocString("settings_ui", $"{locKey}.ok"));
+    }
 
     private static NCard? GetInspectedCard() =>
         NGame.Instance!.GetInspectCardScreen().GetNodeOrNull<NCard>("Card");

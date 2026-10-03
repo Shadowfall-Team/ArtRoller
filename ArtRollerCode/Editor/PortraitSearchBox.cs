@@ -2,7 +2,6 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using ArtRoller.Patches;
-using MegaCrit.Sts2.Core.Logging;
 
 namespace ArtRoller.Editor;
 
@@ -166,7 +165,7 @@ public class PortraitSearchBox
         }
         catch (Exception ex)
         {
-            Log.Error($"[PortraitSearchBox] Failed to list card portraits: {ex.Message}");
+            MainFile.Logger.Error($"Failed to list card portraits: {ex.Message}");
         }
 
         _portraits = Task.Run(() => LoadAllPortraitPaths(cardPaths, roots));
@@ -192,11 +191,11 @@ public class PortraitSearchBox
             int beforeCustom = paths.Count;
             foreach (var root in roots)
                 AddPortraitsUnder(root, paths, seen);
-            Log.Info($"[PortraitSearchBox] Loaded {paths.Count} portrait paths, {paths.Count - beforeCustom} of them from mod folders.");
+            MainFile.Logger.Info($"Loaded {paths.Count} portrait paths, {paths.Count - beforeCustom} of them from mod folders.");
         }
         catch (Exception ex)
         {
-            Log.Error($"[PortraitSearchBox] Failed to load portrait paths: {ex.Message}");
+            MainFile.Logger.Error($"Failed to load portrait paths: {ex.Message}");
         }
         return paths;
     }

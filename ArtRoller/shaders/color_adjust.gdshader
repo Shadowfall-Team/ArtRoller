@@ -28,7 +28,7 @@ uniform float gamma    : hint_range(0.1, 3.0) = 1.0;
 uniform vec4  tint     : source_color = vec4(1.0);
 
 // ── Selective hue: three independent sets ─────
-// Hues and widths are in turns of the colour wheel. A set with width 0 is off.
+// Hues and widths are in turns of the color wheel. A set with width 0 is off.
 uniform bool  selective_active = false;
 uniform float selective_target_hue[3];
 uniform float selective_width[3];
@@ -115,7 +115,7 @@ void fragment() {
 
     // 9b. Selective hue, last and in order, so each set works on the image as it then looks: set 1
     //     on the finished Standard adjustments, set 2 on set 1's result, set 3 on set 2's. That is
-    //     what makes the colour picker's eyedropper, which reads the screen, pick what the set will
+    //     what makes the color picker's eyedropper, which reads the screen, pick what the set will
     //     actually match. Clamped first because the screen can only show 0..1.
     if (selective_active) {
         col.rgb = clamp(col.rgb, 0.0, 1.0);

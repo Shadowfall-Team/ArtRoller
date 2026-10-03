@@ -2,7 +2,7 @@
   "id": "ArtRoller",
   "name": "Art Roller",
   "author": "Originally by Manu. Split by Shadowfall Team",
-  "description": "Shared card art recolouring for Slay the Spire 2 mods. Mods ship per-card hue, colour, contrast, mirror and portrait overrides; an optional compendium editor lets you roll your own.",
+  "description": "Shared card art recoloring for Slay the Spire 2 mods. Mods ship per-card hue, color, contrast, mirror and portrait overrides; an optional compendium editor lets you roll your own.",
   "version": "v1.0.0",
   "min_game_version": "0.107.0",
   "has_pck": true,

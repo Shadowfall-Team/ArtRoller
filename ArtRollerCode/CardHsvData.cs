@@ -66,9 +66,9 @@ public record CardHsvData
 /// </summary>
 public record SelectiveHue
 {
-    /// <summary>The colour to target. Only its hue matters.</summary>
+    /// <summary>The color to target. Only its hue matters.</summary>
     [JsonPropertyName("color")]       public string Color      { get; init; } = "#ff0000";
-    /// <summary>How far from the target hue still counts, 1 being a quarter of the colour wheel either side.</summary>
+    /// <summary>How far from the target hue still counts, 1 being a quarter of the color wheel either side.</summary>
     [JsonPropertyName("width")]       public float  Width      { get; init; } = 0.3f;
     [JsonPropertyName("shift")]       public float  Shift      { get; init; } = 1f;
     [JsonPropertyName("saturation")]  public float  Saturation { get; init; } = 1f;

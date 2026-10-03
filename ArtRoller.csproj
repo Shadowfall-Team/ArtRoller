@@ -21,7 +21,7 @@
         <PackageId>Shadowfall.Sts2.ArtRoller</PackageId>
         <Title>Art Roller</Title>
         <Authors>Shadowfall Team</Authors>
-        <Description>Shared card art recolouring for Slay the Spire 2 mods. Reference with ExcludeAssets="runtime": players get ArtRoller.dll from the Art Roller mod itself.</Description>
+        <Description>Shared card art recoloring for Slay the Spire 2 mods. Reference with ExcludeAssets="runtime": players get ArtRoller.dll from the Art Roller mod itself.</Description>
         <PackageTags>slay-the-spire-2;sts2;mod</PackageTags>
         <RepositoryUrl>https://github.com/Shadowfall-Team/ArtRoller</RepositoryUrl>
         <PackageProjectUrl>https://github.com/Shadowfall-Team/ArtRoller</PackageProjectUrl>

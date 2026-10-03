@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Godot;
-using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ArtRoller;
@@ -45,6 +44,19 @@ public static class CardArtRoller
     /// drawn or its portrait path is read, far too often to go to disk.
     /// </summary>
     private static readonly Dictionary<string, CardHsvData?> DefaultsCache = new();
+
+    /// <summary>
+    /// These are keys cleared with Clear Default this session. A copy packed into a mod's <c>.pck</c> cannot be
+    /// deleted until a rebuild, so it is hidden instead, showing what the result will be after the next package.
+    /// </summary>
+    private static readonly HashSet<string> ClearedDefaults = [];
+
+    /// <summary>
+    /// Keys saved with Save Default this session. They show the new default over any personal roll,
+    /// so the save is visible without writing a personal file. Save Default becomes the "last known
+    /// version the user edited" and thus should be what they see. Save or Clear hands the key back.
+    /// </summary>
+    private static readonly HashSet<string> SavedDefaults = [];
 
     /// <summary>
     /// Adds a <c>res://</c> folder of <c>{key}.hsv</c> rolls. Registered folders are searched in
@@ -104,11 +116,11 @@ public static class CardArtRoller
             {
                 var hsvData = JsonSerializer.Deserialize<CardHsvData>(File.ReadAllText(path));
                 if (hsvData != null && !string.IsNullOrEmpty(hsvData.CardId) && into.TryAdd(hsvData.CardId, hsvData))
-                    Log.Info($"[CardArtRoller] Loaded data for: {hsvData.CardId}");
+                    MainFile.Logger.Info($"Loaded data for: {hsvData.CardId}");
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[CardArtRoller] Failed to load '{path}': {ex.Message}");
+                MainFile.Logger.Error($"Failed to load '{path}': {ex.Message}");
             }
         }
     }
@@ -127,7 +139,7 @@ public static class CardArtRoller
     /// <summary>
     /// The roll to render <paramref name="card"/> with: a scoped key first for a reprint (see
     /// <see cref="ArtContext"/>), then the plain key, each checking personal rolls before defaults.
-    /// The portrait override and the colour grading both come through here, so they never disagree.
+    /// The portrait override and the color grading both come through here, so they never disagree.
     /// </summary>
     public static CardHsvData? Resolve(CardModel? card)
     {
@@ -147,11 +159,12 @@ public static class CardArtRoller
     }
 
     /// <summary>
-    /// The personal roll to render with, or null while the player has personal edits turned off.
-    /// They stay loaded either way, so turning the setting back on needs no restart.
+    /// The personal roll to render with, or null while the player has personal edits turned off or
+    /// a default was just saved over it. They stay loaded either way, so turning the setting back on
+    /// needs no restart.
     /// </summary>
     private static CardHsvData? GetPersonalRoll(string key) =>
-        ArtRollerConfig.ApplyPersonalEdits ? GetCardData(key) : null;
+        ArtRollerConfig.ApplyPersonalEdits && !SavedDefaults.Contains(key) ? GetCardData(key) : null;
 
     /// <summary>
     /// The default shipped for <paramref name="cardId"/>, or null. The result is cached and shared
@@ -179,9 +192,11 @@ public static class CardArtRoller
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[CardArtRoller] Failed to load user default for '{cardId}': {ex.Message}");
+                MainFile.Logger.Error($"Failed to load user default for '{cardId}': {ex.Message}");
             }
         }
+
+        if (ClearedDefaults.Contains(cardId)) return null;
 
         foreach (var directory in GetDefaultsDirectories())
         {
@@ -193,7 +208,7 @@ public static class CardArtRoller
                 using var file = Godot.FileAccess.Open(resPath, Godot.FileAccess.ModeFlags.Read);
                 if (file == null)
                 {
-                    GD.PrintErr($"[CardArtRoller] Could not open '{resPath}': {Godot.FileAccess.GetOpenError()}");
+                    MainFile.Logger.Error($"Could not open '{resPath}': {Godot.FileAccess.GetOpenError()}");
                     continue;
                 }
 
@@ -201,7 +216,7 @@ public static class CardArtRoller
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[CardArtRoller] Failed to load default data for '{cardId}': {ex.Message}");
+                MainFile.Logger.Error($"Failed to load default data for '{cardId}': {ex.Message}");
             }
         }
 
@@ -212,30 +227,34 @@ public static class CardArtRoller
     {
         data = Normalize(cardId, data);
         CardHsvModifiers[cardId] = data;
+        SavedDefaults.Remove(cardId);
         SaveToFile(data, GetUserPath(cardId));
     }
 
     public static void DeleteHsvForCard(string cardId)
     {
         CardHsvModifiers.Remove(cardId);
+        SavedDefaults.Remove(cardId);
         try
         {
             string path = GetUserPath(cardId);
             if (File.Exists(path))
             {
                 File.Delete(path);
-                Log.Info($"[CardArtRoller] Deleted data for {cardId}");
+                MainFile.Logger.Info($"Deleted data for {cardId}");
             }
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[CardArtRoller] Failed to delete data for '{cardId}': {ex.Message}");
+            MainFile.Logger.Error($"Failed to delete data for '{cardId}': {ex.Message}");
         }
     }
 
     public static void SaveDefaultHsvForCard(string cardId, CardHsvData data)
     {
         SaveToFile(Normalize(cardId, data), GetDefaultOutputPath(cardId));
+        ClearedDefaults.Remove(cardId);
+        SavedDefaults.Add(cardId);
         DefaultsCache.Remove(cardId);
     }
 
@@ -246,11 +265,13 @@ public static class CardArtRoller
     };
 
     /// <summary>
-    /// Deletes the default written by <see cref="SaveDefaultHsvForCard"/>. A copy already packed into
-    /// a mod's <c>.pck</c> keeps applying until that mod is rebuilt.
+    /// Deletes the default written by <see cref="SaveDefaultHsvForCard"/>, and hides any packed copy
+    /// for the rest of the session (see <see cref="ClearedDefaults"/>).
     /// </summary>
     public static void DeleteDefaultHsvForCard(string cardId)
     {
+        ClearedDefaults.Add(cardId);
+        SavedDefaults.Remove(cardId);
         DefaultsCache.Remove(cardId);
         try
         {
@@ -258,12 +279,12 @@ public static class CardArtRoller
             if (File.Exists(path))
             {
                 File.Delete(path);
-                Log.Info($"[CardArtRoller] Deleted default for {cardId} at {path}");
+                MainFile.Logger.Info($"Deleted default for {cardId} at {path}");
             }
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[CardArtRoller] Failed to delete default for '{cardId}': {ex.Message}");
+            MainFile.Logger.Error($"Failed to delete default for '{cardId}': {ex.Message}");
         }
     }
 
@@ -275,11 +296,11 @@ public static class CardArtRoller
             string path = GetConfigPath();
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
-            Log.Info($"[CardArtRoller] Config saved to {path}");
+            MainFile.Logger.Info($"Config saved to {path}");
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[CardArtRoller] Failed to save config: {ex.Message}");
+            MainFile.Logger.Error($"Failed to save config: {ex.Message}");
         }
     }
 
@@ -294,11 +315,11 @@ public static class CardArtRoller
             if (doc.RootElement.TryGetProperty("defaults_output_directory", out var prop))
                 DefaultsOutputDirectory = prop.GetString() ?? "";
 
-            Log.Info($"[CardArtRoller] Config loaded. DefaultsOutputDirectory='{DefaultsOutputDirectory}'");
+            MainFile.Logger.Info($"Config loaded. DefaultsOutputDirectory='{DefaultsOutputDirectory}'");
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[CardArtRoller] Failed to load config: {ex.Message}");
+            MainFile.Logger.Error($"Failed to load config: {ex.Message}");
         }
     }
 
@@ -316,11 +337,11 @@ public static class CardArtRoller
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
-            Log.Info($"[CardArtRoller] Saved data for {data.CardId} to {path}");
+            MainFile.Logger.Info($"Saved data for {data.CardId} to {path}");
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[CardArtRoller] Failed to save data for '{data.CardId}': {ex.Message}");
+            MainFile.Logger.Error($"Failed to save data for '{data.CardId}': {ex.Message}");
         }
     }
 

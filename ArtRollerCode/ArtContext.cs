@@ -9,7 +9,7 @@ namespace ArtRoller;
 ///
 /// A reprinted card is the *same* CardModel type as the original, so its id is shared. Scoping
 /// the art roll by character keeps one id usable for both: Havoc drafted by the Ironclad renders as
-/// the base game intends, while Havoc drafted by a modded character can be recoloured to match.
+/// the base game intends, while Havoc drafted by a modded character can be recolored to match.
 /// </summary>
 public static class ArtContext
 {
