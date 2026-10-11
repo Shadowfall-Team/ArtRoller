@@ -16,7 +16,7 @@
     <!-- NuGet package, so mods can compile against Art Roller wherever players install it. The
          version here is the mod's version too: the build writes it into ArtRoller.json. -->
     <PropertyGroup>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
         <IsPackable>true</IsPackable>
         <PackageId>Shadowfall.Sts2.ArtRoller</PackageId>
         <Title>Art Roller</Title>
