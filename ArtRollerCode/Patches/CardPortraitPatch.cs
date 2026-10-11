@@ -1,3 +1,4 @@
+using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
 
@@ -36,5 +37,20 @@ public class CardModelPortraitPatch
         }
 
         return true;
+    }
+
+    // 2026-10-10: Borealis Cards 2 overrides PortraitPath without calling base, so the patch above
+    // never ran and its rolled cards drew blank. No card can override Portrait, so this patch
+    // always runs. Priority.First also skips BaseLib's CustomPortraitPath prefix.
+    [HarmonyPatch(nameof(CardModel.Portrait), MethodType.Getter)]
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    static bool OverridePortrait(CardModel __instance, ref Texture2D __result)
+    {
+        var hsv = CardArtRoller.Resolve(__instance);
+        if (hsv == null || string.IsNullOrWhiteSpace(hsv.PortraitPath)) return true;
+
+        __result = ResourceLoader.Load<Texture2D>(hsv.PortraitPath, null, ResourceLoader.CacheMode.Reuse);
+        return false;
     }
 }
